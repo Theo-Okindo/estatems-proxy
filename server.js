@@ -37,8 +37,18 @@ app.post('/send-sms', async (req, res) => {
       body: body.toString()
     });
 
-    const data = await response.json();
-    console.log(`[${new Date().toISOString()}] SMS to ${phone}: ${JSON.stringify(data)}`);
+    // Read raw text first so we never crash on non-JSON from AT
+    const rawText = await response.text();
+    console.log(`[${new Date().toISOString()}] AT response (${response.status}): ${rawText}`);
+
+    let data;
+    try {
+      data = JSON.parse(rawText);
+    } catch (e) {
+      // AT returned plain text error — return it so app can display it
+      return res.status(500).json({ error: rawText });
+    }
+
     res.json(data);
 
   } catch (err) {
